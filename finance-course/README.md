@@ -33,7 +33,7 @@ It needs a GitHub access token, because only GitHub can accept changes to the re
 3. Under **Repository permissions**, set **Contents** to **Read and write**. Leave everything else alone.
 4. Generate the token, copy it, and paste it into the admin page.
 
-Treat the token like a password: anyone who has it can change the repo. The admin page itself is public but does nothing without a valid token. Files must be under 50 MB each.
+Treat the token like a password: anyone who has it can change the repo. The admin page itself is public but does nothing without a valid token. Files must be under 50 MB each. To delete files, use **Load current files** in the Remove files section, tick the ones to delete, and publish.
 
 ## Practice question format
 

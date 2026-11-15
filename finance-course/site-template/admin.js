@@ -2,6 +2,8 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const MAX = 50 * 1024 * 1024;
 let queue = []; // { file, section, name }
+let existing = []; // { path, size }
+const removals = new Set();
 
 const size = (n) => (n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB");
 const cleanPath = (p) => p.replace(/^\/+|\/+$/g, "");
@@ -10,8 +12,10 @@ function log(msg, err) { const d = document.createElement("div"); if (err) d.cla
 
 function render() {
   $("#queue").innerHTML = queue.map((q, i) => `<tr><td>${esc(targetPath(q))}</td><td class="sz">${size(q.file.size)}</td><td><button type="button" data-i="${i}" aria-label="Remove ${esc(q.name)}">Remove</button></td></tr>`).join("");
-  $("#go").disabled = !queue.length;
-  $("#go").textContent = queue.length ? `Publish ${queue.length} file${queue.length === 1 ? "" : "s"}` : "Publish files";
+  const n = queue.length + removals.size;
+  $("#go").disabled = !n;
+  $("#go").textContent = n ? `Publish ${n} change${n === 1 ? "" : "s"}` : "Publish changes";
+  $("#existing").innerHTML = existing.map((f, i) => `<tr><td>${esc(f.path)}</td><td class="sz">${size(f.size || 0)}</td><td><label><input type="checkbox" data-p="${i}" ${removals.has(f.path) ? "checked" : ""}> Delete</label></td></tr>`).join("");
 }
 
 function add(files) {
@@ -22,6 +26,7 @@ function add(files) {
     const section = $("#section").value;
     queue = queue.filter((q) => !(q.section === section && q.name === name));
     queue.push({ file: f, section, name });
+    removals.delete(targetPath({ section, name }));
   }
   render();
 }
@@ -47,11 +52,32 @@ async function gh(path, opts = {}) {
   return r.json();
 }
 
+function ready() {
+  if (!$("#token").value.trim()) throw new Error("Paste your GitHub access token first.");
+  if (!$("#owner").value.trim() || !$("#repo").value.trim()) throw new Error("Open Repository settings and fill in the owner and repository.");
+}
+
+async function loadExisting() {
+  $("#log").innerHTML = "";
+  try {
+    ready();
+    log("Loading files…");
+    const t = await gh(`/git/trees/${encodeURIComponent($("#branch").value.trim() || "main")}?recursive=1`);
+    const prefix = cleanPath($("#cpath").value) + "/";
+    existing = t.tree.filter((x) => x.type === "blob" && x.path.startsWith(prefix) && !x.path.endsWith("/.gitkeep"))
+      .map((x) => ({ path: x.path, size: x.size }));
+    $("#log").innerHTML = "";
+    if (t.truncated) log("The repository is very large, so this list may be incomplete.", true);
+    log(existing.length ? `${existing.length} files found.` : `No files found under ${esc(prefix)}. Check the content folder in Repository settings.`);
+    render();
+  } catch (e) { log(esc(e.message), true); }
+}
+
 async function publish() {
   const btn = $("#go"); btn.disabled = true; $("#log").innerHTML = "";
   try {
-    if (!$("#token").value.trim()) throw new Error("Paste your GitHub access token first.");
-    if (!$("#owner").value.trim() || !$("#repo").value.trim()) throw new Error("Open Repository settings and fill in the owner and repository.");
+    ready();
+    if (removals.size && !confirm(`Delete ${removals.size} file${removals.size === 1 ? "" : "s"} from the site? They can be restored from the repository history, but not from this page.`)) { btn.disabled = false; return; }
     if ($("#remember").checked) sessionStorage.setItem("gh_token", $("#token").value.trim()); else sessionStorage.removeItem("gh_token");
     const branch = $("#branch").value.trim() || "main";
     log("Connecting to GitHub…");
@@ -63,16 +89,17 @@ async function publish() {
       const blob = await gh("/git/blobs", { method: "POST", body: JSON.stringify({ content: await toBase64(q.file), encoding: "base64" }) });
       entries.push({ path: targetPath(q), mode: "100644", type: "blob", sha: blob.sha });
     }
+    for (const path of removals) entries.push({ path, mode: "100644", type: "blob", sha: null });
     log("Saving changes…");
     const tree = await gh("/git/trees", { method: "POST", body: JSON.stringify({ base_tree: baseTree, tree: entries }) });
     const commit = await gh("/git/commits", { method: "POST", body: JSON.stringify({ message: $("#msg").value.trim() || "Update course content", tree: tree.sha, parents: [parent] }) });
     await gh(`/git/refs/heads/${encodeURIComponent(branch)}`, { method: "PATCH", body: JSON.stringify({ sha: commit.sha }) });
     const actions = `https://github.com/${encodeURIComponent($("#owner").value.trim())}/${encodeURIComponent($("#repo").value.trim())}/actions`;
-    log(`Published ${entries.length} file${entries.length === 1 ? "" : "s"}. The site is rebuilding and should update in a few minutes. <a href="${actions}" target="_blank" rel="noopener">Watch the build</a>.`);
-    queue = []; render();
+    log(`Published ${entries.length} change${entries.length === 1 ? "" : "s"}. The site is rebuilding and should update in a few minutes. <a href="${actions}" target="_blank" rel="noopener">Watch the build</a>.`);
+    queue = []; existing = existing.filter((f) => !removals.has(f.path)); removals.clear(); render();
   } catch (e) {
     log(esc(e.message), true);
-    btn.disabled = !queue.length;
+    render();
   }
 }
 
@@ -90,6 +117,11 @@ async function init() {
   $("#queue").onclick = (e) => { const i = e.target.dataset && e.target.dataset.i; if (i != null) { queue.splice(+i, 1); render(); } };
   $("#cpath").oninput = render;
   $("#go").onclick = publish;
+  $("#load").onclick = loadExisting;
+  $("#existing").onchange = (e) => {
+    const i = e.target.dataset && e.target.dataset.p;
+    if (i != null) { const path = existing[+i].path; e.target.checked ? removals.add(path) : removals.delete(path); render(); }
+  };
   render();
 }
 init();

@@ -49,7 +49,7 @@
     </div>
   </details>
 
-  <h2>2. Choose files</h2>
+  <h2>2. Add or replace files</h2>
   <div class="field">
     <label for="section">Add files to</label>
     <select id="section">
@@ -64,9 +64,14 @@
   <label class="drop" id="drop">Drop files here or click to choose<input id="picker" type="file" multiple></label>
   <table class="queue" id="queue" aria-label="Files to publish"></table>
 
-  <h2>3. Publish</h2>
+  <h2>3. Remove files</h2>
+  <p class="hint">Load the files currently on the site, then tick the ones to delete. Deletions happen when you publish.</p>
+  <div class="actions"><button class="btn" id="load" type="button">Load current files</button></div>
+  <table class="queue" id="existing" aria-label="Files on the site"></table>
+
+  <h2>4. Publish</h2>
   <div class="field"><label for="msg">Change description</label><input id="msg" type="text" value="Update course content"></div>
-  <div class="actions"><button class="btn primary" id="go" type="button" disabled>Publish files</button></div>
+  <div class="actions"><button class="btn primary" id="go" type="button" disabled>Publish changes</button></div>
   <div id="log" role="status" aria-live="polite"></div>
 </main>
 <script src="admin.js"></script>
