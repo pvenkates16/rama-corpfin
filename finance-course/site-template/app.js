@@ -112,7 +112,7 @@ async function init() {
   }
   $("#brand").textContent = D.config.code || D.config.title;
   $("#nav").innerHTML = SECTIONS.filter(([k]) => D[k].length).map(([k, l]) => `<a data-k="${k}" href="#/${k}">${l}</a>`).join("");
-  $("#foot").textContent = `${D.config.title}${D.config.institution ? " · " + D.config.institution : ""} · Updated ${D.built}`;
+  $("#foot").innerHTML = `${esc(D.config.title)}${D.config.institution ? " · " + esc(D.config.institution) : ""} · Updated ${esc(D.built)} · <a href="admin.html">Manage content</a>`;
   $("#searchform").onsubmit = (e) => { e.preventDefault(); const v = $("#q").value.trim(); if (v) location.hash = "#/search/" + encodeURIComponent(v); };
   const t = localStorage.getItem("theme");
   if (t) document.documentElement.dataset.theme = t;

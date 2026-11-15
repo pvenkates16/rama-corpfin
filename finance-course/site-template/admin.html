@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Manage content</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .field { display: grid; gap: .3rem; margin: 1rem 0; font-family: var(--sans); font-size: .95rem; }
+  .field input[type=text], .field input[type=password], .field select { font: inherit; padding: .5rem .7rem; border: 1px solid var(--rule); border-radius: 4px; background: var(--surface); color: var(--ink); width: 100%; }
+  .field small, .hint { color: var(--muted); font: .9rem/1.5 var(--sans); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .drop { display: block; border: 2px dashed var(--rule); border-radius: 6px; padding: 2rem 1rem; text-align: center; font: 1rem var(--sans); color: var(--muted); cursor: pointer; }
+  .drop.over, .drop:focus-within { border-color: var(--accent); color: var(--ink); }
+  .drop input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .queue { width: 100%; border-collapse: collapse; font: .92rem var(--sans); margin: 1rem 0; }
+  .queue td { padding: .5rem .5rem .5rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; word-break: break-all; }
+  .queue .sz { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .queue button { font: inherit; border: none; background: none; color: var(--accent); text-decoration: underline; cursor: pointer; }
+  #log { font: .92rem/1.6 var(--sans); min-height: 1.6rem; } #log .err { color: #b3261e; } @media (prefers-color-scheme: dark) { #log .err { color: #ff8a80; } }
+  button.btn { cursor: pointer; } button.btn:disabled { opacity: .5; cursor: not-allowed; }
+  details.set { margin: 1rem 0; font-family: var(--sans); } details.set summary { cursor: pointer; color: var(--accent); }
+  @media (max-width: 40rem) { .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header class="top"><a class="brand" href="./">← Back to the course site</a></header>
+<main>
+  <h1>Manage content</h1>
+  <p class="sub">Add or replace course files from this page. They're committed to your GitHub repository and the site rebuilds in a few minutes.</p>
+
+  <h2>1. Connect</h2>
+  <div class="field">
+    <label for="token">GitHub access token</label>
+    <input id="token" type="password" autocomplete="off" spellcheck="false">
+    <small>Needs write access to this repository only. See the README for how to create one. The token is never saved unless you tick the box below.</small>
+    <label><input id="remember" type="checkbox"> Remember it for this browser tab</label>
+  </div>
+  <details class="set"><summary>Repository settings</summary>
+    <div class="grid2">
+      <div class="field"><label for="owner">Owner</label><input id="owner" type="text"></div>
+      <div class="field"><label for="repo">Repository</label><input id="repo" type="text"></div>
+      <div class="field"><label for="branch">Branch</label><input id="branch" type="text" value="main"></div>
+      <div class="field"><label for="cpath">Content folder in the repo</label><input id="cpath" type="text" value="content"></div>
+    </div>
+  </details>
+
+  <h2>2. Choose files</h2>
+  <div class="field">
+    <label for="section">Add files to</label>
+    <select id="section">
+      <option value="lectures">Lectures (slides)</option>
+      <option value="practice">Practice questions</option>
+      <option value="exams">Past exams and solutions</option>
+      <option value="course">Syllabus and course documents</option>
+      <option value="resources">Resources</option>
+    </select>
+    <small>Choose a section, add files, then switch sections to add more. A file with the same name as an existing one replaces it.</small>
+  </div>
+  <label class="drop" id="drop">Drop files here or click to choose<input id="picker" type="file" multiple></label>
+  <table class="queue" id="queue" aria-label="Files to publish"></table>
+
+  <h2>3. Publish</h2>
+  <div class="field"><label for="msg">Change description</label><input id="msg" type="text" value="Update course content"></div>
+  <div class="actions"><button class="btn primary" id="go" type="button" disabled>Publish files</button></div>
+  <div id="log" role="status" aria-live="polite"></div>
+</main>
+<script src="admin.js"></script>
+</body>
+</html>
