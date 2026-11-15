@@ -107,7 +107,8 @@ async function init() {
   const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t;
   const m = location.hostname.match(/^(.+)\.github\.io$/);
   if (m) { $("#owner").value = m[1]; $("#repo").value = location.pathname.split("/")[1] || ""; }
-  try { const d = await (await fetch("data.json")).json(); if (d.repo && d.repo.content_path) $("#cpath").value = d.repo.content_path; } catch (_) {}
+  try { const d = await (await fetch("data.json")).json(); if (d.repo && d.repo.content_path) $("#cpath").value = d.repo.content_path;
+    (d.extras || []).forEach((e) => { if (![...$("#section").options].some((o) => o.value === e.folder)) $("#section").add(new Option(e.label, e.folder)); }); } catch (_) {}
   const saved = sessionStorage.getItem("gh_token"); if (saved) { $("#token").value = saved; $("#remember").checked = true; }
   $("#picker").onchange = (e) => { add(e.target.files); e.target.value = ""; };
   const drop = $("#drop");

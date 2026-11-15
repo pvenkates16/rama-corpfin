@@ -17,7 +17,7 @@ function home() {
   const idx = SECTIONS.filter(([k]) => D[k].length).map(([k, label]) => {
     const n = k === "practice" ? D.practice.reduce((a, t) => a + t.questions.length, 0) || D.practice.length : D[k].length;
     return `<li><a href="#/${k}"><span>${label}</span><span class="count">${n}</span></a></li>`;
-  }).join("");
+  }).join("") + D.extras.filter((e) => e.items.length).map((e) => `<li><a href="#/x/${e.key}"><span>${esc(e.label)}</span><span class="count">${e.items.length}</span></a></li>`).join("");
   return `<section class="hero">${c.code ? `<p class="code">${esc(c.code)}</p>` : ""}<h1>${esc(c.title)}</h1></section>
     ${terms ? `<dl class="terms">${terms}</dl>` : ""}${c.intro_html || ""}
     ${dates ? `<h2>Key dates</h2><table class="dates">${dates}</table>` : ""}
@@ -66,8 +66,18 @@ function exams() {
   }).join("") : empty("exams"));
 }
 
+function docList(items) {
+  return items.map((r) => `<article class="doc"><h2>${esc(r.title)}</h2>${r.html}${r.file ? links(r) + (r.pdf ? `<details><summary>Preview</summary>${viewer(r, r.title)}</details>` : "") : ""}</article>`).join("");
+}
+
 function resources() {
-  return `<h1>Resources</h1>` + (D.resources.length ? D.resources.map((r) => `<article class="doc"><h2>${esc(r.title)}</h2>${r.html}${r.file ? links(r) : ""}</article>`).join("") : empty("resources"));
+  return `<h1>Resources</h1>` + (D.resources.length ? docList(D.resources) : empty("resources"));
+}
+
+function extra(key) {
+  const e = D.extras.find((x) => x.key === key);
+  if (!e) return notFound();
+  return `<h1>${esc(e.label)}</h1>` + (e.items.length ? docList(e.items) : empty(e.label.toLowerCase()));
 }
 
 function search(q) {
@@ -89,10 +99,11 @@ const notFound = () => `<h1>Page not found</h1><p><a href="#/">Back to the cours
 
 function route() {
   const [, sec = "", arg] = location.hash.replace(/^#/, "").split("/");
-  const views = { "": home, course, lectures, practice, exams, resources, search };
+  const views = { "": home, course, lectures, practice, exams, resources, x: extra, search };
   $("#main").innerHTML = (views[sec] || notFound)(arg);
-  document.querySelectorAll("#nav a").forEach((a) => (a.dataset.k === sec ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
-  document.title = (sec && SECTIONS.find((s) => s[0] === sec) ? SECTIONS.find((s) => s[0] === sec)[1] + " · " : "") + D.config.title;
+  document.querySelectorAll("#nav a").forEach((a) => (a.dataset.k === (sec === "x" ? "x:" + arg : sec) ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
+  const known = SECTIONS.find((s) => s[0] === sec) || (sec === "x" && D.extras.find((e) => e.key === arg) && [0, D.extras.find((e) => e.key === arg).label]);
+  document.title = (known ? known[1] + " · " : "") + D.config.title;
   const all = $("#alldet");
   if (all) all.onclick = () => {
     const ds = [...document.querySelectorAll(".q details")], open = ds.some((d) => !d.open);
@@ -111,7 +122,8 @@ async function init() {
     return;
   }
   $("#brand").textContent = D.config.code || D.config.title;
-  $("#nav").innerHTML = SECTIONS.filter(([k]) => D[k].length).map(([k, l]) => `<a data-k="${k}" href="#/${k}">${l}</a>`).join("");
+  $("#nav").innerHTML = SECTIONS.filter(([k]) => D[k].length).map(([k, l]) => `<a data-k="${k}" href="#/${k}">${l}</a>`).join("")
+    + D.extras.filter((e) => e.items.length).map((e) => `<a data-k="x:${e.key}" href="#/x/${e.key}">${esc(e.label)}</a>`).join("");
   $("#foot").innerHTML = `${esc(D.config.title)}${D.config.institution ? " · " + esc(D.config.institution) : ""} · Updated ${esc(D.built)} · <a href="admin.html">Manage content</a>`;
   $("#searchform").onsubmit = (e) => { e.preventDefault(); const v = $("#q").value.trim(); if (v) location.hash = "#/search/" + encodeURIComponent(v); };
   const t = localStorage.getItem("theme");
