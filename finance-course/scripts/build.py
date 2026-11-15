@@ -137,6 +137,16 @@ def parse_qa(text):
              "text": re.sub(r"\s+", " ", i["q"] + " " + i["a"]).strip()} for i in items if i["q"].strip()]
 
 
+def content_repo_path():
+    """Path of content/ relative to the git repo root (the admin page needs it)."""
+    try:
+        top = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--show-toplevel"],
+                             capture_output=True, text=True, check=True).stdout.strip()
+        return CONTENT.relative_to(Path(top).resolve()).as_posix()
+    except Exception:
+        return "content"
+
+
 def main():
     if OUT.exists(): shutil.rmtree(OUT)
     shutil.copytree(TEMPLATE, OUT)
@@ -220,7 +230,7 @@ def main():
             add_search("Resource", slug(p.stem), title, extract(p)[1], "#/resources")
 
     data = {"config": cfg, "course": course, "lectures": lectures, "practice": practice,
-            "exams": exams, "resources": resources,
+            "exams": exams, "resources": resources, "repo": {"content_path": content_repo_path()},
             "built": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}
     (OUT / "data.json").write_text(json.dumps(data, ensure_ascii=False, default=str), encoding="utf-8")
     (OUT / "search.json").write_text(json.dumps(search, ensure_ascii=False), encoding="utf-8")
