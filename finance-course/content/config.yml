@@ -1,0 +1,20 @@
+# Course details shown on the home page. Every field is optional.
+title: Corporate finance
+code: FIN 301
+institution: Your University
+term: Autumn 2026
+meets: Tuesdays and Thursdays, 10:00-11:30
+instructor: Prof. Jane Doe
+email: jane.doe@example.edu
+office_hours: Wednesdays 14:00-16:00, Room 2.14
+intro: |
+  This course covers how firms decide which projects to fund, how they pay for them,
+  and how those choices create or destroy value.
+dates:
+  - { date: "12 Oct", event: "Problem set 1 due" }
+  - { date: "9 Nov", event: "Midterm exam" }
+  - { date: "14 Dec", event: "Final exam" }
+
+# Optional: override a title derived from a filename.
+# titles:
+#   03-npv.pptx: Net present value and the investment rule
