@@ -18,6 +18,9 @@ Drop course files into `content/`, commit, and GitHub rebuilds the site in a min
 | `content/practice/` | One `.md` file per topic (format below) | Questions with show/hide answers, filterable by topic |
 | `content/exams/` | `2024-midterm.pdf`, `2024-midterm-solutions.pdf` | Exams paired with their solutions by filename |
 | `content/resources/` | Formula sheet (`.md`), readings, anything else | Resources page |
+| `content/readings/` | Assigned readings (PDF, Word) | Readings page |
+| `content/quizzes/` | Quizzes (PDF, Word) | Quizzes page |
+| `content/exercise-classes/` | Exercise class sheets and solutions | Exercise classes page |
 | `content/private/` | Anything you don't want published | Never committed or built |
 
 PPTX, DOCX, ODP and similar files are converted to PDF on GitHub for inline viewing; the original is offered as a download. All text is extracted into the search index.
