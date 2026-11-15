@@ -22,6 +22,19 @@ Drop course files into `content/`, commit, and GitHub rebuilds the site in a min
 
 PPTX, DOCX, ODP and similar files are converted to PDF on GitHub for inline viewing; the original is offered as a download. All text is extracted into the search index.
 
+## Uploading from the website
+
+The site has a **Manage content** page (link in the footer, or `/admin.html`). Pick a section, drop files in, and click **Publish**. All files go into a single commit and the site rebuilds in a few minutes.
+
+It needs a GitHub access token, because only GitHub can accept changes to the repo:
+
+1. On GitHub, open your profile picture > **Settings > Developer settings > Personal access tokens > Fine-grained tokens > Generate new token**.
+2. Name it, set an expiry (90 days is reasonable), and under **Repository access** choose **Only select repositories** and pick this repo.
+3. Under **Repository permissions**, set **Contents** to **Read and write**. Leave everything else alone.
+4. Generate the token, copy it, and paste it into the admin page.
+
+Treat the token like a password: anyone who has it can change the repo. The admin page itself is public but does nothing without a valid token. Files must be under 50 MB each.
+
 ## Practice question format
 
 ```
