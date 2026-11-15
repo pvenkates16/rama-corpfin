@@ -14,6 +14,11 @@ CONVERTIBLE = {".pptx", ".ppt", ".docx", ".doc", ".odp", ".odt"}
 SOLUTION_RE = re.compile(r"[-_ .](solutions?|answers?|key|sol)$", re.I)
 NUM_RE = re.compile(r"^(\d+)[-_. ]+")
 SEARCH_CHARS = 8000
+# Extra categories: each is a folder under content/ listed like Resources.
+# Override or add more with `extra_sections:` in config.yml.
+DEFAULT_EXTRA = [{"folder": "readings", "label": "Readings"},
+                 {"folder": "quizzes", "label": "Quizzes"},
+                 {"folder": "exercise-classes", "label": "Exercise classes"}]
 TMP = Path(tempfile.mkdtemp())
 warned_soffice = False
 
@@ -34,7 +39,9 @@ def number(stem):
     return int(m.group(1)) if m else 10**6
 
 
-def sort_key(p): return (number(p.stem), p.name.lower())
+def sort_key(p):
+    # numeric prefix first, then natural order (so "Lecture 2" sorts before "Lecture 10")
+    return (number(p.stem), [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", p.name)])
 
 
 def front_matter(text):
@@ -216,28 +223,38 @@ def main():
         exams.append(e)
     exams.sort(key=lambda e: e["title"], reverse=True)
 
-    resources = []
-    for p in list_files("resources"):
-        if p.suffix.lower() in (".md", ".markdown"):
-            meta, body = front_matter(p.read_text(encoding="utf-8"))
-            title = meta.get("title") or titles.get(p.name) or titleize(p.stem)
-            resources.append({"id": slug(p.stem), "title": title, "html": md_html(body)})
-            add_search("Resource", slug(p.stem), title, body, "#/resources")
-        else:
-            title = titles.get(p.name) or titleize(p.stem)
-            resources.append({"id": slug(p.stem), "title": title, "html": "",
-                              "file": publish(p, "resources"), "pdf": to_pdf(p, "resources")})
-            add_search("Resource", slug(p.stem), title, extract(p)[1], "#/resources")
+    def doc_items(folder, kind, link):
+        items = []
+        for p in list_files(folder):
+            if p.suffix.lower() in (".md", ".markdown"):
+                meta, body = front_matter(p.read_text(encoding="utf-8"))
+                title = meta.get("title") or titles.get(p.name) or titleize(p.stem)
+                items.append({"id": slug(p.stem), "title": title, "html": md_html(body)})
+                add_search(kind, slug(p.stem), title, body, link)
+            else:
+                title = titles.get(p.name) or titleize(p.stem)
+                items.append({"id": slug(p.stem), "title": title, "html": "",
+                              "file": publish(p, folder), "pdf": to_pdf(p, folder)})
+                add_search(kind, slug(p.stem), title, extract(p)[1], link)
+        return items
+
+    resources = doc_items("resources", "Resource", "#/resources")
+    extras = []
+    for sec in (cfg.get("extra_sections") or DEFAULT_EXTRA):
+        key = slug(sec["folder"])
+        extras.append({"key": key, "folder": sec["folder"], "label": sec.get("label") or titleize(sec["folder"]),
+                       "items": doc_items(sec["folder"], sec.get("label") or titleize(sec["folder"]), f"#/x/{key}")})
 
     data = {"config": cfg, "course": course, "lectures": lectures, "practice": practice,
-            "exams": exams, "resources": resources, "repo": {"content_path": content_repo_path()},
+            "exams": exams, "resources": resources, "extras": extras, "repo": {"content_path": content_repo_path()},
             "built": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}
     (OUT / "data.json").write_text(json.dumps(data, ensure_ascii=False, default=str), encoding="utf-8")
     (OUT / "search.json").write_text(json.dumps(search, ensure_ascii=False), encoding="utf-8")
     (OUT / ".nojekyll").touch()
     shutil.rmtree(TMP, ignore_errors=True)
     print(f"Built: {len(lectures)} lectures, {sum(len(x['questions']) for x in practice)} questions, "
-          f"{len(exams)} exams, {len(resources)} resources")
+          f"{len(exams)} exams, {len(resources)} resources, "
+          + ", ".join(f"{len(e['items'])} {e['label'].lower()}" for e in extras))
 
 
 if __name__ == "__main__":
